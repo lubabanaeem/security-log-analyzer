@@ -12,8 +12,14 @@ for line in logs:
             ip_count[ip] = ip_count[ip]+1
         else:
             ip_count[ip] = 1
-for values in ip_count:
-    print(values, "->",ip_count[values], "failed login attempts")
+threshold = 3
+for ips in ip_count:
+    if ip_count[ips] >= threshold:
+        print("[ALERT]",ips, "->",ip_count[ips], "failed login attempts")
+    else:
+        print("[NORMAL]",ips, "->",ip_count[ips], "failed login attempts")
+
+    
    
 
 
