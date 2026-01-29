@@ -11,8 +11,8 @@ def get_failed_counts(log_data):
     ip_count = {}
     for line in log_data:
         if "Failed login" in line:
-            my_list = line.split(" ")
-            ip = my_list[-1].strip()
+            parts = line.split(" ")
+            ip = parts[-1].strip()
         
         
             if ip in ip_count:
@@ -25,10 +25,10 @@ def get_failed_dates(log_data):
     ip_date = {}
     for line in log_data:
         if "Failed login" in line:
-            my_list = line.split(" ")
-            ip = my_list[-1].strip()
-            date = my_list[0].strip()
-            time = my_list[1].strip()
+            parts= line.split(" ")
+            ip = parts[-1].strip()
+            date = parts[0].strip()
+            time = parts[1].strip()
 
             if ip not in ip_date:
                 ip_date[ip] = (date,time)
