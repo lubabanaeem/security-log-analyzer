@@ -47,11 +47,12 @@ def get_report(failed_ip_counts,first_seen_time):
      else:
         normal = f"[NORMAL] IP{ip} first seen at {first_seen_time[ip]} -> detected with {failed_ip_counts[ip]} failed login attempts"
         print(normal)
+    with open("alerts.txt", "w") as file:
+     for a in alerts:
+        file.write(a + "\n")
 
 get_report(failed_ip_counts,first_seen_time)  
-with open("alerts.txt", "w") as file:
-   for a in alerts:
-      file.write(a + "\n")
+
 
 
         

@@ -1,0 +1,1 @@
+[ALERT] IP 192.168.1.10 first seen at ,('2025-01-22', '10:12:15') -> detected with 3 failed login attempts (exceeded threshold,possible brute-force attack)
