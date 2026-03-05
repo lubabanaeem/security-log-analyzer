@@ -37,14 +37,21 @@ def get_failed_dates(log_data):
 failed_ip_counts = get_failed_counts(log_data)
 first_seen_time = get_failed_dates(log_data)
 def get_report(failed_ip_counts,first_seen_time):
- threshold = 3
- for ip in failed_ip_counts:
-    if failed_ip_counts[ip] >= threshold:
-        print("[ALERT]","IP", ip,"first seen at:",first_seen_time[ip], "-> detected with",failed_ip_counts[ip], "failed login attempts (exceeded threshold,possible brute-force attack)")
-    else:
-        print("[NORMAL] ","IP",ip,"first seen at:",first_seen_time[ip], "-> detected with" ,failed_ip_counts[ip], "failed login attempts")
+    alerts = []
+    threshold = int(input("enter alert threshold: "))
+    for ip in failed_ip_counts:
+     if failed_ip_counts[ip] >= threshold:
+        alert = f"[ALERT] IP {ip} first seen at ,{first_seen_time[ip]} -> detected with {failed_ip_counts[ip]} failed login attempts (exceeded threshold,possible brute-force attack)"
+        print(alert)
+        alerts.append(alert)
+     else:
+        normal = f"[NORMAL] IP{ip} first seen at {first_seen_time[ip]} -> detected with {failed_ip_counts[ip]} failed login attempts"
+        print(normal)
 
 get_report(failed_ip_counts,first_seen_time)  
+with open("alerts.txt", "w") as file:
+   for a in alerts:
+      file.write(a + "\n")
 
 
         
