@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SOC Dashboard — Security Log Analyzer</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg:        #0D1117;
+            --surface:   #161B22;
+            --border:    #21262D;
+            --accent:    #58A6FF;
+            --red:       #F85149;
+            --green:     #3FB950;
+            --text:      #E6EDF3;
+            --muted:     #8B949E;
+            --mono:      'JetBrains Mono', monospace;
+            --sans:      'Inter', sans-serif;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--sans);
+            font-size: 14px;
+            min-height: 100vh;
+        }
+
+        /* NAV */
+        nav {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 0 32px;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-family: var(--mono);
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        .nav-brand::before {
+            content: '⬡';
+            font-size: 20px;
+        }
+
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .nav-user {
+            font-size: 12px;
+            color: var(--muted);
+            font-family: var(--mono);
+        }
+
+        .btn-logout {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--muted);
+            padding: 5px 14px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            font-family: var(--sans);
+            transition: border-color 0.2s, color 0.2s;
+        }
+
+        .btn-logout:hover {
+            border-color: var(--red);
+            color: var(--red);
+        }
+
+        /* SCAN BAR — signature element */
+        .scan-bar {
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent), transparent);
+            background-size: 200% 100%;
+            animation: scan 2.5s ease-in-out infinite;
+        }
+
+        @keyframes scan {
+            0%   { background-position: -100% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        /* LAYOUT */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 32px 24px;
+        }
+
+        /* PAGE HEADER */
+        .page-header {
+            margin-bottom: 32px;
+        }
+
+        .page-header h1 {
+            font-size: 22px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 4px;
+        }
+
+        .page-header p {
+            font-size: 13px;
+            color: var(--muted);
+            font-family: var(--mono);
+        }
+
+        /* UPLOAD SECTION */
+        .upload-section {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px 24px;
+            margin-bottom: 28px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .upload-label {
+            font-size: 13px;
+            color: var(--muted);
+            white-space: nowrap;
+            font-family: var(--mono);
+        }
+
+        .upload-section input[type="file"] {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text);
+            padding: 6px 10px;
+            font-size: 13px;
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .upload-section input[type="file"]::-webkit-file-upload-button {
+            background: var(--border);
+            border: none;
+            color: var(--text);
+            padding: 4px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            margin-right: 8px;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: #0D1117;
+            border: none;
+            padding: 7px 18px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: opacity 0.2s;
+        }
+
+        .btn-primary:hover { opacity: 0.85; }
+
+        .btn-export {
+            background: transparent;
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            padding: 7px 18px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background 0.2s;
+            display: inline-block;
+        }
+
+        .btn-export:hover {
+            background: rgba(88,166,255,0.1);
+            color: var(--accent);
+        }
+
+        .error-msg {
+            background: rgba(248,81,73,0.1);
+            border: 1px solid rgba(248,81,73,0.3);
+            color: var(--red);
+            padding: 10px 14px;
+            border-radius: 6px;
+            font-size: 13px;
+            margin-top: 12px;
+            width: 100%;
+        }
+
+        /* STAT CARDS */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+
+        .stat-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 8px;
+            font-family: var(--mono);
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 600;
+            font-family: var(--mono);
+            color: var(--text);
+            line-height: 1;
+        }
+
+        .stat-card.danger .stat-value { color: var(--red); }
+        .stat-card.accent .stat-value { color: var(--accent); }
+
+        .stat-file {
+            font-size: 12px;
+            font-family: var(--mono);
+            color: var(--muted);
+            word-break: break-all;
+            margin-top: 4px;
+        }
+
+        /* SECTION HEADER */
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+            margin-top: 32px;
+        }
+
+        .section-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            font-family: var(--mono);
+        }
+
+        /* CHARTS */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .chart-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .chart-card-header {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            font-family: var(--mono);
+        }
+
+        .chart-card-body {
+            padding: 16px;
+            height: 220px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* FILTERS */
+        .filters-row {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px 20px;
+            display: flex;
+            gap: 24px;
+            align-items: flex-end;
+            flex-wrap: wrap;
+            margin-bottom: 28px;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .filter-group label {
+            font-size: 11px;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            font-family: var(--mono);
+        }
+
+        .filter-group select,
+        .filter-group input {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text);
+            padding: 7px 10px;
+            font-size: 13px;
+            font-family: var(--mono);
+            min-width: 180px;
+        }
+
+        .filter-group select:focus,
+        .filter-group input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        /* TABLES */
+        .table-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 24px;
+        }
+
+        .table-card-header {
+            padding: 14px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .table-card-header h3 {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text);
+            font-family: var(--mono);
+        }
+
+        .count-badge {
+            background: var(--border);
+            color: var(--muted);
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-family: var(--mono);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead th {
+            padding: 10px 20px;
+            text-align: left;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            border-bottom: 1px solid var(--border);
+            font-family: var(--mono);
+            background: var(--bg);
+        }
+
+        tbody td {
+            padding: 12px 20px;
+            border-bottom: 1px solid var(--border);
+            font-family: var(--mono);
+            font-size: 13px;
+            color: var(--text);
+        }
+
+        tbody tr:last-child td { border-bottom: none; }
+
+        tbody tr {
+            transition: background 0.15s;
+            text-decoration: none;
+        }
+
+        tbody tr:hover { background: rgba(88,166,255,0.04); }
+
+        a.table-row-link {
+            display: contents;
+            color: inherit;
+            text-decoration: none;
+        }
+
+        /* BADGES */
+        .badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            font-family: var(--mono);
+            letter-spacing: 0.04em;
+        }
+
+        .badge-high {
+            background: rgba(248,81,73,0.15);
+            color: var(--red);
+            border: 1px solid rgba(248,81,73,0.3);
+        }
+
+        .badge-normal {
+            background: rgba(63,185,80,0.12);
+            color: var(--green);
+            border: 1px solid rgba(63,185,80,0.25);
+        }
+
+        /* EMPTY STATE */
+        .empty-state {
+            padding: 40px 20px;
+            text-align: center;
+            color: var(--muted);
+            font-size: 13px;
+            font-family: var(--mono);
+        }
+
+        /* REPORT SUMMARY */
+        .report-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1px;
+            background: var(--border);
+        }
+
+        .report-cell {
+            background: var(--surface);
+            padding: 16px 20px;
+        }
+
+        .report-cell-label {
+            font-size: 11px;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            font-family: var(--mono);
+            margin-bottom: 4px;
+        }
+
+        .report-cell-value {
+            font-size: 14px;
+            font-family: var(--mono);
+            color: var(--text);
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 768px) {
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .charts-grid { grid-template-columns: 1fr; }
+            nav { padding: 0 16px; }
+            .container { padding: 20px 16px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- SCAN BAR -->
+<div class="scan-bar"></div>
+
+<!-- NAV -->
+<nav>
+    <a class="nav-brand" href="/">SIEM — Log Analyzer</a>
+    <div class="nav-right">
+        {% if request.user.is_authenticated %}
+        <span class="nav-user">{{ request.user.username }}</span>
+        {% endif %}
+        <form method="POST" action="/logout/" style="margin:0;">
+            {% csrf_token %}
+            <button type="submit" class="btn-logout">Sign out</button>
+        </form>
+    </div>
+</nav>
+
+<div class="container">
+
+    <!-- PAGE HEADER -->
+    <div class="page-header">
+        <h1>Security Dashboard</h1>
+        <p>SOC Monitoring & Threat Detection</p>
+    </div>
+
+    <!-- UPLOAD -->
+    <form method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="upload-section">
+            <span class="upload-label">$ analyze</span>
+            <input type="file" name="file">
+            <button type="submit" class="btn-primary">Run Analysis</button>
+            {% if upload_id %}
+            <a href="/export/{{ upload_id }}/" class="btn-export">↓ Export PDF</a>
+            {% endif %}
+        </div>
+        {% if error %}
+        <div class="error-msg">⚠ {{ error }}</div>
+        {% endif %}
+    </form>
+
+    <!-- STATS -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-label">Total Alerts</div>
+            <div class="stat-value">{{ total_alerts|default:"—" }}</div>
+        </div>
+        <div class="stat-card danger">
+            <div class="stat-label">High Severity</div>
+            <div class="stat-value">{{ high_alerts|default:"—" }}</div>
+        </div>
+        <div class="stat-card accent">
+            <div class="stat-label">Suspicious IPs</div>
+            <div class="stat-value">{{ suspicious_ips|default:"—" }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Analyzed File</div>
+            <div class="stat-file">{{ latest_file|default:"No file loaded" }}</div>
+        </div>
+    </div>
+
+    {% if upload_id %}
+
+    <!-- CHARTS -->
+    <div class="section-header">
+        <span class="section-title">Threat Visualization</span>
+    </div>
+    <div class="charts-grid">
+        <div class="chart-card">
+            <div class="chart-card-header">Severity Distribution</div>
+            <div class="chart-card-body"><canvas id="severityChart"></canvas></div>
+        </div>
+        <div class="chart-card">
+            <div class="chart-card-header">Top Suspicious IPs</div>
+            <div class="chart-card-body"><canvas id="topIpsChart"></canvas></div>
+        </div>
+        <div class="chart-card">
+            <div class="chart-card-header">Failed Login Timeline</div>
+            <div class="chart-card-body"><canvas id="timelineChart"></canvas></div>
+        </div>
+    </div>
+
+    <!-- FILTERS -->
+    <div class="section-header">
+        <span class="section-title">Filter Results</span>
+    </div>
+    <div class="filters-row">
+        <form method="GET" style="display:contents;">
+            <input type="hidden" name="upload_id" value="{{ upload_id }}">
+            <div class="filter-group">
+                <label>Severity</label>
+                <select name="severity">
+                    <option value="">All</option>
+                    <option value="HIGH">HIGH</option>
+                    <option value="NORMAL">NORMAL</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>IP Address</label>
+                <input type="text" name="ip" placeholder="e.g. 192.168.1.1">
+            </div>
+            <button type="submit" class="btn-primary" style="align-self:flex-end;">Apply</button>
+        </form>
+    </div>
+
+    <!-- ALERTS TABLE -->
+    <div class="section-header">
+        <span class="section-title">Alerts</span>
+    </div>
+    <div class="table-card">
+        <div class="table-card-header">
+            <h3>Alert Log</h3>
+            {% if alerts %}<span class="count-badge">{{ alerts|length }}</span>{% endif %}
+        </div>
+        {% if alerts %}
+        <table>
+            <thead>
+                <tr>
+                    <th>IP Address</th>
+                    <th>Message</th>
+                    <th>Severity</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for alert in alerts %}
+                <tr>
+                    <td>{{ alert.ip_adress }}</td>
+                    <td>{{ alert.message }}</td>
+                    <td>
+                        {% if alert.severity == "HIGH" %}
+                        <span class="badge badge-high">HIGH</span>
+                        {% else %}
+                        <span class="badge badge-normal">NORMAL</span>
+                        {% endif %}
+                    </td>
+                    <td><a href="/alert/{{ alert.id }}/" style="color:var(--accent);font-size:12px;">View →</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state">No alerts match the current filter.</div>
+        {% endif %}
+    </div>
+
+    <!-- SUSPICIOUS IPs TABLE -->
+    <div class="section-header">
+        <span class="section-title">Suspicious IPs</span>
+    </div>
+    <div class="table-card">
+        <div class="table-card-header">
+            <h3>Detected Threats</h3>
+            {% if ips %}<span class="count-badge">{{ ips|length }}</span>{% endif %}
+        </div>
+        {% if ips %}
+        <table>
+            <thead>
+                <tr>
+                    <th>IP Address</th>
+                    <th>Failed Attempts</th>
+                    <th>First Seen</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ip in ips %}
+                <tr>
+                    <td>{{ ip.ip_adress }}</td>
+                    <td>{{ ip.failed_no_attempts }}</td>
+                    <td>{{ ip.first_seen_date }} {{ ip.first_seen_time }}</td>
+                    <td><span class="badge badge-high">FLAGGED</span></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state">No suspicious IPs detected.</div>
+        {% endif %}
+    </div>
+
+    <!-- REPORT SUMMARY -->
+    {% if report %}
+    <div class="section-header">
+        <span class="section-title">Report Summary</span>
+    </div>
+    <div class="table-card">
+        <div class="report-grid">
+            <div class="report-cell">
+                <div class="report-cell-label">Report ID</div>
+                <div class="report-cell-value">#{{ report.id }}</div>
+            </div>
+            <div class="report-cell">
+                <div class="report-cell-label">Generated At</div>
+                <div class="report-cell-value">{{ report.generated_at }}</div>
+            </div>
+            <div class="report-cell">
+                <div class="report-cell-label">Total Alerts</div>
+                <div class="report-cell-value">{{ report.total_alerts }}</div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% endif %}
+
+</div>
+
+<script>
+const chartDefaults = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+        y: {
+            beginAtZero: true,
+            ticks: { stepSize: 1, color: '#8B949E', font: { family: 'JetBrains Mono', size: 11 } },
+            grid: { color: 'rgba(33,38,45,0.8)' }
+        },
+        x: {
+            ticks: { color: '#8B949E', font: { family: 'JetBrains Mono', size: 11 } },
+            grid: { display: false }
+        }
+    }
+};
+
+new Chart(document.getElementById('severityChart'), {
+    type: 'bar',
+    data: {
+        labels: ['HIGH', 'NORMAL'],
+        datasets: [{
+            data: [{{ high_count|default:0 }}, {{ normal_count|default:0 }}],
+            backgroundColor: ['rgba(248,81,73,0.7)', 'rgba(63,185,80,0.7)'],
+            borderColor: ['#F85149', '#3FB950'],
+            borderWidth: 1,
+            borderRadius: 4,
+        }]
+    },
+    options: chartDefaults
+});
+
+const topIps = {{ top_ips|safe|default:"[]" }};
+new Chart(document.getElementById('topIpsChart'), {
+    type: 'bar',
+    data: {
+        labels: topIps.map(i => i.ip_adress),
+        datasets: [{
+            data: topIps.map(i => i.failed_no_attempts),
+            backgroundColor: 'rgba(88,166,255,0.6)',
+            borderColor: '#58A6FF',
+            borderWidth: 1,
+            borderRadius: 4,
+        }]
+    },
+    options: chartDefaults
+});
+
+const timeline = {{ timeline|safe|default:"[]" }};
+new Chart(document.getElementById('timelineChart'), {
+    type: 'line',
+    data: {
+        labels: timeline.map(i => i.first_seen_time),
+        datasets: [{
+            data: timeline.map((_, idx) => idx + 1),
+            borderColor: '#58A6FF',
+            backgroundColor: 'rgba(88,166,255,0.08)',
+            fill: true,
+            tension: 0.4,
+            pointBackgroundColor: '#58A6FF',
+            pointRadius: 4,
+        }]
+    },
+    options: chartDefaults
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alert Detail — Security Log Analyzer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg:      #0D1117;
+            --surface: #161B22;
+            --border:  #21262D;
+            --accent:  #58A6FF;
+            --red:     #F85149;
+            --green:   #3FB950;
+            --text:    #E6EDF3;
+            --muted:   #8B949E;
+            --mono:    'JetBrains Mono', monospace;
+            --sans:    'Inter', sans-serif;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--sans);
+            min-height: 100vh;
+        }
+
+        .scan-bar {
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent), transparent);
+            background-size: 200% 100%;
+            animation: scan 2.5s ease-in-out infinite;
+        }
+
+        @keyframes scan {
+            0%   { background-position: -100% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        nav {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 0 32px;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .nav-brand {
+            font-family: var(--mono);
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        .nav-brand::before { content: '⬡ '; }
+
+        .btn-back {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--muted);
+            padding: 5px 14px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            font-family: var(--mono);
+            text-decoration: none;
+            transition: border-color 0.2s, color 0.2s;
+        }
+
+        .btn-back:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .container {
+            max-width: 680px;
+            margin: 0 auto;
+            padding: 40px 24px;
+        }
+
+        .page-eyebrow {
+            font-size: 11px;
+            color: var(--muted);
+            font-family: var(--mono);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 8px;
+        }
+
+        .page-title {
+            font-size: 22px;
+            font-weight: 600;
+            margin-bottom: 32px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 3px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            font-family: var(--mono);
+        }
+
+        .badge-high {
+            background: rgba(248,81,73,0.15);
+            color: var(--red);
+            border: 1px solid rgba(248,81,73,0.3);
+        }
+
+        .badge-normal {
+            background: rgba(63,185,80,0.12);
+            color: var(--green);
+            border: 1px solid rgba(63,185,80,0.25);
+        }
+
+        .detail-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .detail-row {
+            display: grid;
+            grid-template-columns: 160px 1fr;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .detail-row:last-child { border-bottom: none; }
+
+        .detail-key {
+            padding: 16px 20px;
+            font-size: 11px;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            font-family: var(--mono);
+            background: var(--bg);
+            border-right: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+        }
+
+        .detail-value {
+            padding: 16px 20px;
+            font-family: var(--mono);
+            font-size: 13px;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+        }
+
+        {% if alert.severity == "HIGH" %}
+        .detail-card {
+            border-top: 2px solid var(--red);
+        }
+        {% endif %}
+    </style>
+</head>
+<body>
+
+<div class="scan-bar"></div>
+
+<nav>
+    <a class="nav-brand" href="/">SIEM — Log Analyzer</a>
+    <a href="/?upload_id={{ alert.uploaded_log.id }}" class="btn-back">← Back to Dashboard</a>
+</nav>
+
+<div class="container">
+
+    <div class="page-eyebrow">Alert / #{{ alert.id }}</div>
+    <div class="page-title">
+        {{ alert.ip_adress }}
+        {% if alert.severity == "HIGH" %}
+        <span class="badge badge-high">HIGH</span>
+        {% else %}
+        <span class="badge badge-normal">NORMAL</span>
+        {% endif %}
+    </div>
+
+    <div class="detail-card">
+        <div class="detail-row">
+            <div class="detail-key">Alert ID</div>
+            <div class="detail-value">#{{ alert.id }}</div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-key">IP Address</div>
+            <div class="detail-value">{{ alert.ip_adress }}</div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-key">Severity</div>
+            <div class="detail-value">
+                {% if alert.severity == "HIGH" %}
+                <span class="badge badge-high">HIGH</span>
+                {% else %}
+                <span class="badge badge-normal">NORMAL</span>
+                {% endif %}
+            </div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-key">Message</div>
+            <div class="detail-value">{{ alert.message }}</div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-key">Log File ID</div>
+            <div class="detail-value">#{{ alert.uploaded_log.id }}</div>
+        </div>
+    </div>
+
+</div>
+
+</body>
+</html>

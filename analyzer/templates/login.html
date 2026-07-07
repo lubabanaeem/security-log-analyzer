@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In — Security Log Analyzer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg:      #0D1117;
+            --surface: #161B22;
+            --border:  #21262D;
+            --accent:  #58A6FF;
+            --red:     #F85149;
+            --text:    #E6EDF3;
+            --muted:   #8B949E;
+            --mono:    'JetBrains Mono', monospace;
+            --sans:    'Inter', sans-serif;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--sans);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .scan-bar {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent), transparent);
+            background-size: 200% 100%;
+            animation: scan 2.5s ease-in-out infinite;
+        }
+
+        @keyframes scan {
+            0%   { background-position: -100% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        .login-wrap {
+            width: 100%;
+            max-width: 380px;
+            padding: 24px;
+        }
+
+        .brand {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .brand-icon {
+            font-size: 32px;
+            color: var(--accent);
+            font-family: var(--mono);
+            display: block;
+            margin-bottom: 12px;
+        }
+
+        .brand h1 {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 4px;
+        }
+
+        .brand p {
+            font-size: 12px;
+            color: var(--muted);
+            font-family: var(--mono);
+        }
+
+        .login-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 28px;
+        }
+
+        .login-card h2 {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 24px;
+            color: var(--text);
+        }
+
+        /* Override Django's default form.as_p styles */
+        .login-card p {
+            margin-bottom: 16px;
+        }
+
+        .login-card label {
+            display: block;
+            font-size: 11px;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            font-family: var(--mono);
+            margin-bottom: 6px;
+        }
+
+        .login-card input[type="text"],
+        .login-card input[type="password"] {
+            width: 100%;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text);
+            padding: 9px 12px;
+            font-size: 13px;
+            font-family: var(--mono);
+            transition: border-color 0.2s;
+        }
+
+        .login-card input[type="text"]:focus,
+        .login-card input[type="password"]:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .btn-submit {
+            width: 100%;
+            background: var(--accent);
+            color: #0D1117;
+            border: none;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: var(--sans);
+            margin-top: 8px;
+            transition: opacity 0.2s;
+        }
+
+        .btn-submit:hover { opacity: 0.85; }
+
+        .error-list {
+            background: rgba(248,81,73,0.1);
+            border: 1px solid rgba(248,81,73,0.3);
+            color: var(--red);
+            padding: 10px 14px;
+            border-radius: 6px;
+            font-size: 12px;
+            margin-bottom: 16px;
+            font-family: var(--mono);
+            list-style: none;
+        }
+
+        .footer-note {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 11px;
+            color: var(--muted);
+            font-family: var(--mono);
+        }
+    </style>
+</head>
+<body>
+
+<div class="scan-bar"></div>
+
+<div class="login-wrap">
+
+    <div class="brand">
+        <span class="brand-icon">⬡</span>
+        <h1>Security Log Analyzer</h1>
+        <p>SOC Monitoring & Threat Detection</p>
+    </div>
+
+    <div class="login-card">
+        <h2>Sign in to continue</h2>
+
+        <form method="POST">
+            {% csrf_token %}
+
+            {% if form.errors %}
+            <ul class="error-list">
+                <li>⚠ Invalid username or password.</li>
+            </ul>
+            {% endif %}
+
+            {{ form.as_p }}
+
+            <button type="submit" class="btn-submit">Sign In →</button>
+        </form>
+    </div>
+
+    <p class="footer-note">Authorized personnel only</p>
+
+</div>
+
+</body>
+</html>
